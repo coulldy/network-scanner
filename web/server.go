@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -21,13 +22,23 @@ import (
 var staticFS embed.FS
 
 const (
-	APIVersion   = "1.0.0"
-	APIKey       = "scanner-secret-key-2026"
-	TargetSubnet = "192.168.0.0/24"
-	PortsList    = "21,22,23,25,53,80,110,143,443,445,3306,3389,5432,8080,8443"
+	APIVersion = "1.0.0"
+	PortsList  = "21,22,23,25,53,80,110,143,443,445,3306,3389,5432,8080,8443"
 )
 
-var startTime = time.Now()
+var (
+	APIKey       = getEnv("SCANNER_API_KEY", "dev-key-change-me")
+	TargetSubnet = getEnv("SCANNER_SUBNET", "192.168.0.0/24")
+	startTime    = time.Now()
+)
+
+// getEnv возвращает значение переменной окружения или fallback
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
 
 // ---------- Модели ----------
 

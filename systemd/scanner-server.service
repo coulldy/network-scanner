@@ -1,0 +1,14 @@
+[Unit]
+Description=Central Server for Scanner Reports
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/vlad/scanner/server
+ExecStart=/home/vlad/scanner/server/scanner-server
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

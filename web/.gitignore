@@ -1,0 +1,13 @@
+# Бинарники
+scanner-web
+scanner-server
+
+# Логи
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store

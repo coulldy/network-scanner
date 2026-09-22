@@ -1,0 +1,20 @@
+# Бинарники
+scanner-web
+scanner-server
+*.exe
+*.bin
+
+# Логи
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Временные файлы
+/tmp/

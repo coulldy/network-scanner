@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Network Scanner</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0d1117; color: #e6edf3; font-family: -apple-system, system-ui, sans-serif; padding: 20px; }
+h1 { color: #58a6ff; font-size: 24px; margin-bottom: 4px; }
+.sub { color: #8b949e; font-size: 13px; margin-bottom: 20px; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; }
+.qr-box { background: #fff; padding: 10px; border-radius: 10px; text-align: center; }
+.qr-box img { display: block; }
+.qr-box .cap { color: #000; font-size: 10px; margin-top: 4px; font-weight: 600; }
+.alert { background: #4a1d1d; border: 1px solid #ff7b72; color: #ff7b72; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; display: none; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px; }
+.card .label { color: #8b949e; font-size: 12px; text-transform: uppercase; }
+.card .value { font-size: 28px; font-weight: 600; margin-top: 6px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.btn { background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+.btn:hover { background: #2ea043; }
+.btn.sec { background: #21262d; border: 1px solid #30363d; }
+.btn.sec:hover { background: #30363d; }
+.btn.danger { background: #da3633; }
+.btn.danger:hover { background: #f85149; }
+.search { flex: 1; min-width: 200px; background: #161b22; border: 1px solid #30363d; color: #e6edf3; padding: 10px 14px; border-radius: 8px; font-size: 14px; }
+.device { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 14px; margin-bottom: 10px; cursor: pointer; }
+.device:hover { border-color: #58a6ff; }
+.device .head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+.ip { font-family: monospace; font-size: 16px; color: #58a6ff; font-weight: 600; }
+.host { color: #8b949e; font-size: 13px; }
+.ports { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+.port { padding: 4px 10px; border-radius: 6px; font-size: 13px; font-family: monospace; }
+.port.high { background: #4a1d1d; color: #ff7b72; }
+.port.medium { background: #4a3a1d; color: #d29922; }
+.port.low { background: #1d3a2a; color: #3fb950; }
+.running { color: #d29922; }
+.ok { color: #3fb950; }
+.history { margin-top: 30px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px; }
+.history h2 { font-size: 16px; color: #58a6ff; margin-bottom: 12px; }
+.history table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.history th, .history td { padding: 8px; text-align: left; border-bottom: 1px solid #30363d; }
+.history th { color: #8b949e; font-weight: normal; }
+.server-link { background: #1f6feb22; border: 1px solid #1f6feb; color: #58a6ff; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-size: 13px; display: inline-block; margin-bottom: 16px; }
+.server-link:hover { background: #1f6feb33; }
+.footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #30363d; color: #8b949e; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="top">
+  <div>
+    <h1>Network Scanner</h1>
+    <div class="sub">Автономный аудит информационной безопасности</div>
+  </div>
+  <div class="qr-box">
+    <img id="qr" src="" width="150" height="150" alt="QR">
+    <div class="cap">Открыть с телефона</div>
+  </div>
+</div>
+
+<a href="http://192.168.0.30:9090" class="server-link" id="serverLink" target="_blank">
+  &#128225; Центральный сервер (отчёты) &rarr;
+</a>
+
+<div id="alert" class="alert"></div>
+
+<div class="stats">
+<div class="card"><div class="label">Устройств</div><div class="value" id="dev">-</div></div>
+<div class="card"><div class="label">Портов</div><div class="value" id="ports">-</div></div>
+<div class="card"><div class="label">Риск</div><div class="value" id="risk">-</div></div>
+<div class="card"><div class="label">Время</div><div class="value" id="time">-</div></div>
+</div>
+
+<div class="controls">
+<button class="btn" onclick="startScan()">Сканировать</button>
+<button class="btn sec" onclick="loadData()">Обновить</button>
+<button class="btn sec" onclick="location.href='/api/export.csv'">Скачать CSV</button>
+<button class="btn danger" onclick="clearHistory()">Очистить историю</button>
+<input class="search" id="search" placeholder="Поиск по IP или имени..." oninput="renderDevices()">
+<select class="search" id="filter" onchange="renderDevices()" style="flex:0 0 auto;width:auto">
+<option value="all">Все устройства</option>
+<option value="ports">Только с портами</option>
+<option value="risky">Только с опасными</option>
+</select>
+</div>
+
+<div style="margin-bottom:16px" id="status" class="sub"></div>
+<div id="devices"></div>
+
+<div class="history" id="historyBox" style="display:none">
+<h2>История сканирований</h2>
+<table>
+<thead><tr><th>Время</th><th>Устройств</th><th>Портов</th><th>Риск</th></tr></thead>
+<tbody id="historyBody"></tbody>
+</table>
+</div>
+
+<div class="footer">
+  Network Scanner v1.0.0 &middot; <a href="/api/health" style="color:#58a6ff">Health</a> &middot; <a href="/api/stats" style="color:#58a6ff">Stats</a> &middot; <a href="/api/version" style="color:#58a6ff">Version</a>
+</div>
+
+<script>
+const API_KEY = 'scanner-secret-key-2026';
+let allDevices = [];
+
+async function loadData() {
+  const r = await fetch('/api/results');
+  const d = await r.json();
+  document.getElementById('dev').textContent = d.stats.devices || 0;
+  document.getElementById('ports').textContent = d.stats.ports || 0;
+  document.getElementById('risk').textContent = d.stats.risk || '-';
+  document.getElementById('time').textContent = (d.stats.time ? d.stats.time.toFixed(1) + 'с' : '-');
+
+  const st = document.getElementById('status');
+  if (d.running) {
+    st.innerHTML = '<span class="running">&#9679; Идёт сканирование...</span>';
+  } else {
+    st.innerHTML = '<span class="ok">&#9679; Готово</span> — последний скан: ' + (d.stats.last_run || '-');
+  }
+
+  allDevices = d.devices || [];
+  renderDevices();
+
+  const danger = allDevices.reduce((n, dv) => n + (dv.ports || []).filter(p => p.risk === 'high').length, 0);
+  const alertBox = document.getElementById('alert');
+  if (danger > 0) {
+    alertBox.style.display = 'block';
+    alertBox.innerHTML = '&#9888; Внимание! Найдено критических портов: ' + danger + '. Проверьте устройства ниже.';
+  } else {
+    alertBox.style.display = 'none';
+  }
+
+  if (d.history && d.history.length > 0) {
+    document.getElementById('historyBox').style.display = 'block';
+    const hb = document.getElementById('historyBody');
+    hb.innerHTML = d.history.slice().reverse().map(h =>
+      '<tr><td>' + h.time + '</td><td>' + h.devices + '</td><td>' + h.ports + '</td><td>' + h.risk + '</td></tr>'
+    ).join('');
+  } else {
+    document.getElementById('historyBox').style.display = 'none';
+  }
+}
+
+function renderDevices() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const f = document.getElementById('filter').value;
+  const box = document.getElementById('devices');
+  box.innerHTML = '';
+
+  allDevices.filter(d => {
+    if (q && !d.ip.toLowerCase().includes(q) && !(d.hostname || '').toLowerCase().includes(q)) return false;
+    if (f === 'ports' && (!d.ports || d.ports.length === 0)) return false;
+    if (f === 'risky' && !(d.ports || []).some(p => p.risk === 'high' || p.risk === 'medium')) return false;
+    return true;
+  }).forEach(dev => {
+    const el = document.createElement('div');
+    el.className = 'device';
+    el.onclick = () => showDevice(dev.ip);
+    const portsHtml = (dev.ports || []).map(p =>
+      '<span class="port ' + p.risk + '">' + p.number + '/' + p.service + '</span>'
+    ).join('');
+    el.innerHTML = '<div class="head"><span class="ip">' + dev.ip + '</span>' +
+      '<span class="host">' + (dev.hostname || '') + '</span></div>' +
+      '<div class="ports">' + (portsHtml || '<span class="host">Открытых портов нет</span>') + '</div>';
+    box.appendChild(el);
+  });
+}
+
+async function showDevice(ip) {
+  const r = await fetch('/api/device/' + ip);
+  const d = await r.json();
+  alert('Устройство: ' + d.ip + '\nHostname: ' + (d.hostname || '—') +
+    '\nПортов: ' + (d.ports ? d.ports.length : 0));
+}
+
+async function startScan() {
+  const r = await fetch('/api/scan', {
+    method: 'GET',
+    headers: { 'X-API-Key': API_KEY }
+  });
+  if (r.status === 401) {
+    alert('Ошибка авторизации: неверный API-ключ');
+    return;
+  }
+  setTimeout(loadData, 500);
+}
+
+async function clearHistory() {
+  if (!confirm('Очистить всю историю сканирований?')) return;
+  const r = await fetch('/api/reports', {
+    method: 'DELETE',
+    headers: { 'X-API-Key': API_KEY }
+  });
+  if (r.status === 401) {
+    alert('Ошибка авторизации: неверный API-ключ');
+    return;
+  }
+  loadData();
+}
+
+document.getElementById('qr').src = '/api/qr?t=' + Date.now();
+
+fetch('/api/system').then(r => r.json()).then(s => {
+  if (s.ip) {
+    document.getElementById('serverLink').href = 'http://' + s.ip + ':9090';
+  }
+});
+
+loadData();
+setInterval(loadData, 5000);
+</script>
+</body>
+</html>

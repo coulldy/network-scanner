@@ -1,0 +1,14 @@
+[Unit]
+Description=Network Scanner Web Interface
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/vlad/scanner/web
+ExecStart=/home/vlad/scanner/web/scanner-web
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

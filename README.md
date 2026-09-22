@@ -110,3 +110,24 @@ curl -H "X-API-Key: scanner-secret-key-2026" http://localhost:8080/api/scan
 #Тесты
 
 cd web go test -v
+
+## Безопасность
+
+- **API-ключ** вынесен в переменную окружения `SCANNER_API_KEY` (fallback: `dev-key-change-me`).
+- **Целевая подсеть** настраивается через `SCANNER_SUBNET` (по умолчанию `192.168.0.0/24`).
+- Защищённые эндпоинты: `/api/scan`, `/api/reports` — требуют заголовок `X-API-Key`.
+- Устройство предназначено для **авторизованного аудита** собственных сетей.
+- Применение в чужих сетях без разрешения запрещено (ст. 272 УК РФ).
+
+### Настройка через systemd
+
+```ini
+[Service]
+Environment="SCANNER_API_KEY=your-secret-key-here"
+Environment="SCANNER_SUBNET=192.168.0.0/24"
+
+# API-ключ для защиты эндпоинтов /api/scan и /api/reports
+SCANNER_API_KEY=change-me-to-secret-key
+
+# Целевая подсеть для сканирования
+SCANNER_SUBNET=192.168.0.0/24
